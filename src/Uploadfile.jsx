@@ -88,6 +88,7 @@ function UploadFile() {
   const [result, setResult] = useState([]);
   const [isDragging, setIsDragging] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [sameFile,setSameFile]=useState(null)
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
@@ -110,16 +111,37 @@ function UploadFile() {
     try {
       const formData = new FormData();
       formData.append("employeeFile", file);
+      setSameFile(file);  // Store the file for potential re-use
 
       const res = await axios.post("https://socialenrichmentbackend.vercel.app/api/enrich", formData);
-    console.log(res)
-    console.log('res')
       setResult(res.data);
     } catch (error) {
       console.error('Upload error:', error);
       alert('Error uploading file');
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
+  };
+
+  const sameFileRun = async () => {
+    if (!sameFile) {
+      alert('No previous file available');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append("employeeFile", sameFile);
+
+      const res = await axios.post("https://socialenrichmentbackend.vercel.app/api/enrich", formData);
+      setResult(res.data);
+    } catch (error) {
+      console.error('Re-run error:', error);
+      alert('Error re-processing file');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -151,11 +173,12 @@ function UploadFile() {
 
       <UploadButton 
         onClick={handleUpload} 
+
         disabled={!file || isLoading}
       >
         {isLoading ? 'Processing...' : 'Upload & Analyze'}
       </UploadButton>
-
+ 
       {result.length > 0 && (
         <ResultsTable>
           <thead>
